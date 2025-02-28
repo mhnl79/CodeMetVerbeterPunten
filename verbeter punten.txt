@@ -1,0 +1,97 @@
+Code met verbeterpunt
+
+Tijdens mijn stagebespreking met Bart, waarin ik mijn eindopdracht presenteerde via Teams, wees hij erop dat er geen foutmelding op mijn site verscheen bij het invoeren van een incorrect wachtwoord tijdens het inlogproces.
+
+Ik heb dit opgelost door het Django Messages Framework te implementeren, zoals beschreven in de handleiding op
+https://docs.djangoproject.com/en/5.1/ref/contrib/messages/
+
+
+Hieronder de oude en nieuwe code. 
+
+####################### Oude Code #######################
+
+<!-- contact.html -->
+{% extends 'base.html' %}
+{% block title %}Login{% endblock %}
+{% block content %}
+<main>
+<h1>Login</h1>
+    <form method="post">
+        {% csrf_token %}
+        <label for="username">Gebruikersnaam:</label>
+        <input type="text" id="username" name="username">
+        <label for="password">Wachtwoord:</label>
+        <input type="password" id="password" name="password">
+        <button type="submit">Inloggen</button>
+    </form>
+</main>
+{% endblock %}
+
+
+Urls.py
+path('login/', auth_views.LoginView.as_view(template_name='login.html'), name='login'),
+
+
+-------------------------------------------------------
+####################### Nieuwe Code #######################
+
+# settings.py
+
+# Configure the message tags
+from django.contrib.messages import constants as messages
+MESSAGE_TAGS = {
+    messages.ERROR: 'danger',
+}
+
+
+#login.html
+<!-- login.html -->
+{% extends 'base.html' %}
+
+{% block title %}Login{% endblock %}
+
+{% block content %}
+<main>
+    <h1>Login</h1>
+    {% if messages %}
+        <ul class="messages">
+            {% for message in messages %}
+                <li class="{{ message.tags }}">{{ message }}</li>
+            {% endfor %}
+        </ul>
+    {% endif %}
+    <form method="post">
+        {% csrf_token %}
+        <label for="username">Gebruikersnaam:</label>
+        <input type="text" id="username" name="username">
+        <label for="password">Wachtwoord:</label>
+        <input type="password" id="password" name="password">
+        <button type="submit">Inloggen</button>
+    </form>
+</main>
+{% endblock %}
+
+
+
+# urls.py
+from django.urls import path
+from .views import CustomLoginView
+
+urlpatterns = [
+    ...
+    path('login/', CustomLoginView.as_view(), name='login'),
+    ...
+]
+
+
+# views.py
+from django.contrib.auth import views as auth_views
+from django.contrib import messages
+
+class CustomLoginView(auth_views.LoginView):
+    template_name = 'login.html'
+
+    def form_invalid(self, form):
+        messages.error(self.request, 'Ongeldige gebruikersnaam of wachtwoord.')
+        return super().form_invalid(form)
+
